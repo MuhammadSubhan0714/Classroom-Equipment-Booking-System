@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Equipment Booking System</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <style>
+      .status-available {
+        background: #10b981;
+      }
+      .status-booked {
+        background: #ef4444;
+      }
+    </style>
+  </head>
+
+  <body class="bg-gray-100">
+    <!-- ================= LOGIN SCREEN ================= -->
+    <div id="loginScreen" class="flex items-center justify-center h-screen">
+      <div class="bg-white p-8 rounded-xl shadow-lg w-80">
+        <h2 class="text-xl font-bold mb-4 text-center">Login</h2>
+
+        <input
+          id="username"
+          type="text"
+          placeholder="Enter Name"
+          class="w-full p-2 border mb-3 rounded"
+        />
+
+        <select id="role" class="w-full p-2 border mb-3 rounded">
+          <option value="student">Student</option>
+          <option value="admin">Administrator</option>
+        </select>
+
+        <button
+          onclick="login()"
+          class="w-full bg-indigo-500 text-white p-2 rounded"
+        >
+          Sign In
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= MAIN APP ================= -->
+    <div id="app" class="hidden p-6">
+      <h1 class="text-2xl font-bold mb-4">Equipment Booking</h1>
+      <p id="welcomeText" class="mb-4"></p>
+
+      <!-- Equipment -->
+      <div id="equipmentList" class="grid grid-cols-2 gap-4 mb-6"></div>
+
+      <!-- Booking Panel -->
+      <div class="bg-white p-4 rounded shadow">
+        <h3 class="font-bold mb-2">Quick Book</h3>
+
+        <div id="selectedEquipment"></div>
+
+        <div id="timeSlots" class="grid grid-cols-3 gap-2 mt-3"></div>
+
+        <button
+          id="bookBtn"
+          onclick="bookEquipment()"
+          class="mt-4 bg-indigo-500 text-white px-4 py-2 rounded"
+        >
+          Book
+        </button>
+      </div>
+
+      <!-- QR -->
+      <div id="qrSection" class="hidden mt-6">
+        <canvas id="qrcode"></canvas>
+        <p id="bookingId"></p>
+      </div>
+
+      <!-- Admin -->
+      <div id="adminPanel" class="hidden mt-6 bg-red-100 p-4 rounded">
+        <h3 class="font-bold">Admin Panel</h3>
+        <div id="adminBookings"></div>
+      </div>
+    </div>
+
+    <script>
+      // ================= LOGIN =================
+      function login() {
+        const name = document.getElementById("username").value;
+        const role = document.getElementById("role").value;
+
+        if (!name) return alert("Enter name");
+
+        localStorage.setItem("user", JSON.stringify({ name, role }));
+
+        document.getElementById("loginScreen").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+
+        document.getElementById("welcomeText").innerText =
+          `Welcome ${name} (${role})`;
+
+        if (role === "admin") {
+          document.getElementById("adminPanel").classList.remove("hidden");
+        }
+
+        init();
+      }
+
+      // ================= DATA =================
+      const equipmentData = [
+        { id: 1, name: "Projector", status: "available" },
+        { id: 2, name: "Laptop Cart", status: "available" },
+        { id: 3, name: "Camera", status: "booked" },
+      ];
+
+      let selectedEquipment = null;
+      let selectedTimeSlot = null;
+      let bookings = [];
+
+      // ================= INIT =================
+      function init() {
+        renderEquipment();
+        generateRandomSlots();
+      }
+
+      // ================= EQUIPMENT =================
+      function renderEquipment() {
+        const container = document.getElementById("equipmentList");
+        container.innerHTML = "";
+
+        equipmentData.forEach((eq) => {
+          const div = document.createElement("div");
+
+          div.className = `p-4 rounded text-white cursor-pointer ${
+            eq.status === "available" ? "bg-green-500" : "bg-red-500"
+          }`;
+
+          div.innerText = eq.name;
+
+          div.onclick = () => selectEquipment(eq);
+
+          container.appendChild(div);
+        });
+      }
+
+      // ================= SELECT =================
+      function selectEquipment(eq) {
+        if (eq.status !== "available") return;
+
+        selectedEquipment = eq;
+
+        document.getElementById("selectedEquipment").innerText =
+          "Selected: " + eq.name;
+      }
+
+      // ================= RANDOM TIME SLOTS =================
+      function generateRandomSlots() {
+        const container = document.getElementById("timeSlots");
+        container.innerHTML = "";
+
+        for (let i = 0; i < 6; i++) {
+          let hour = Math.floor(Math.random() * 8) + 10;
+
+          let slot = `${hour}:00 - ${hour + 1}:00`;
+
+          const btn = document.createElement("button");
+          btn.className = "bg-gray-200 p-2 rounded";
+
+          btn.innerText = slot;
+
+          btn.onclick = () => {
+            selectedTimeSlot = slot;
+            alert("Selected " + slot);
+          };
+
+          container.appendChild(btn);
+        }
+      }
+
+      // ================= BOOK =================
+      function bookEquipment() {
+        if (!selectedEquipment || !selectedTimeSlot) {
+          return alert("Select equipment and time");
+        }
+
+        const bookingId = "BK" + Math.floor(Math.random() * 10000);
+
+        bookings.push({
+          id: bookingId,
+          equipment: selectedEquipment.name,
+          time: selectedTimeSlot,
+        });
+
+        selectedEquipment.status = "booked";
+
+        // QR
+        QRCode.toCanvas(document.getElementById("qrcode"), bookingId);
+
+        document.getElementById("bookingId").innerText = bookingId;
+        document.getElementById("qrSection").classList.remove("hidden");
+
+        renderEquipment();
+        renderAdmin();
+      }
+
+      // ================= ADMIN =================
+      function renderAdmin() {
+        const container = document.getElementById("adminBookings");
+        container.innerHTML = "";
+
+        bookings.forEach((b) => {
+          const div = document.createElement("div");
+          div.innerText = `${b.id} - ${b.equipment} (${b.time})`;
+          container.appendChild(div);
+        });
+      }
+    </script>
+  </body>
+</html>
