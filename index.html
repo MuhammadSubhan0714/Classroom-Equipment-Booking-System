@@ -13,173 +13,423 @@
         .fade-in { animation: fadeIn 0.5s ease-in; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .qr-container { backdrop-filter: blur(10px); }
+        .slot-booked { background-color: #fee2e2; color: #ef4444; cursor: not-allowed; opacity: 0.6; }
     </style>
 </head>
-
 <body class="bg-gradient-to-br from-indigo-50 via-white to-blue-50 min-h-screen">
 
-<!-- HEADER -->
-<header class="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-indigo-100">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-indigo-600">Equipment Booking</h1>
-        <span id="userName">Welcome, Student</span>
+    <!-- Header -->
+    <header class="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50 border-b border-indigo-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-projector text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">UniGear Pro</h1>
+                        <p class="text-xs text-gray-500 font-medium">Real-time availability</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="openAdmin()" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1 rounded-lg transition-colors">
+                        <i class="fas fa-shield-halved mr-1"></i> Admin View
+                    </button>
+                    <span class="text-sm font-medium text-gray-700" id="userNameDisplay">Welcome, Student #4021</span>
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/50 fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-xl">
+                        <i class="fas fa-check-circle text-2xl text-green-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-3xl font-bold text-green-600" id="availableCount">0</p>
+                        <p class="text-gray-600 font-medium">Available Now</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/50 fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-red-100 rounded-xl">
+                        <i class="fas fa-clock text-2xl text-red-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-3xl font-bold text-red-600" id="bookedCount">0</p>
+                        <p class="text-gray-600 font-medium">Currently In Use</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white/80 backdrop-blur-md rounded-2xl p-8 shadow-xl border border-white/50 fade-in">
+                <div class="flex items-center">
+                    <div class="p-3 bg-indigo-100 rounded-xl">
+                        <i class="fas fa-users text-2xl text-indigo-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-3xl font-bold text-indigo-600" id="totalBookings">0</p>
+                        <p class="text-gray-600 font-medium">System Total Gear</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Equipment List -->
+            <div class="lg:col-span-3">
+                <div class="bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/50 mb-8">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">Available Equipment</h2>
+                            <p class="text-gray-600">Select an item to see its specific schedule</p>
+                        </div>
+                        <div class="flex space-x-3 mt-4 sm:mt-0">
+                            <button onclick="renderEquipment('all')" class="px-6 py-2.5 bg-indigo-500 text-white rounded-xl font-medium hover:bg-indigo-600 transition-all duration-200 flex items-center space-x-2">
+                                <i class="fas fa-list"></i>
+                                <span>All</span>
+                            </button>
+                            <button onclick="renderEquipment('available')" class="px-6 py-2.5 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-all duration-200 flex items-center space-x-2">
+                                <i class="fas fa-check"></i>
+                                <span>Available</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="equipmentList">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Panel -->
+            <div class="lg:sticky lg:top-24">
+                <div class="bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/50">
+                    <div id="bookingDefaultState">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                            <i class="fas fa-calendar-check text-indigo-500 mr-3"></i>
+                            Reservation
+                        </h3>
+                        
+                        <div id="selectedEquipment" class="hidden mb-8 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border-2 border-dashed border-indigo-200">
+                            <div class="flex items-center space-x-4 mb-4">
+                                <div id="selectedIcon" class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg text-white">
+                                    <i class="fas fa-projector text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xl text-gray-900" id="selectedName">--</h4>
+                                    <p class="text-indigo-600 text-sm font-medium" id="selectedUser">No active user</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 mb-8">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Available Time Slots Today</label>
+                            <div class="grid grid-cols-2 gap-3" id="timeSlots">
+                                <!-- Populated by JS based on equipment -->
+                            </div>
+                        </div>
+
+                        <button id="bookBtn" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 px-6 rounded-2xl font-bold text-lg shadow-xl hover:from-indigo-600 hover:to-purple-700 transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none" disabled>
+                            <i class="fas fa-bolt"></i>
+                            <span>Confirm Booking</span>
+                        </button>
+                    </div>
+
+                    <!-- QR Code Section (Appears after booking) -->
+                    <div id="qrSection" class="hidden fade-in">
+                        <div class="text-center mb-6">
+                            <div class="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-2xl flex items-center justify-center">
+                                <i class="fas fa-qrcode text-3xl text-green-600"></i>
+                            </div>
+                            <h4 class="text-xl font-bold text-gray-900 mb-2">Booking Confirmed!</h4>
+                            <p class="text-gray-600 text-sm">Present this QR code to the equipment manager.</p>
+                        </div>
+                        <div class="qr-container bg-white p-4 rounded-2xl shadow-inner border border-gray-100 mx-auto">
+                            <canvas id="qrcode" class="w-full"></canvas>
+                        </div>
+                        <div class="mt-6 text-center space-y-4">
+                            <div class="bg-indigo-50 p-3 rounded-xl">
+                                <p class="text-xs uppercase tracking-wider font-bold text-indigo-400 mb-1">Booking ID</p>
+                                <p class="font-mono text-indigo-900 font-bold" id="bookingIdText">---</p>
+                            </div>
+                            <button onclick="resetUI()" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition-colors">
+                                Back to List
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</header>
 
-<div class="max-w-7xl mx-auto p-6">
-
-<!-- STATS -->
-<div class="grid grid-cols-3 gap-4 mb-6">
-    <div>Available: <span id="availableCount">0</span></div>
-    <div>Booked: <span id="bookedCount">0</span></div>
-    <div>Total: <span id="totalBookings">0</span></div>
-</div>
-
-<!-- EQUIPMENT -->
-<div id="equipmentList" class="grid grid-cols-3 gap-4"></div>
-
-<!-- QUICK BOOK -->
-<div class="mt-6">
-    <h3>Select Equipment</h3>
-    <div id="selectedEquipment" class="hidden">
-        <h4 id="selectedName"></h4>
-        <p id="selectedStatus"></p>
+    <!-- Admin Modal -->
+    <div id="adminModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900">System Logs & Tracking</h3>
+                    <p class="text-gray-500 text-sm">Real-time usage of all equipment</p>
+                </div>
+                <button onclick="closeAdmin()" class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto pr-2 space-y-4" id="adminLogs">
+                <!-- Log rows -->
+            </div>
+        </div>
     </div>
 
-    <div id="timeSlots" class="grid grid-cols-4 gap-2 mt-3"></div>
-
-    <button id="bookBtn" disabled class="mt-3 bg-indigo-500 text-white p-2">Book</button>
-</div>
-
-<!-- QR -->
-<div id="qrSection" class="hidden mt-4">
-    <canvas id="qrcode"></canvas>
-    <p id="bookingId"></p>
-</div>
-
-<!-- ADMIN -->
-<div class="mt-6">
-    <h3>Admin Bookings</h3>
-    <div id="adminBookings"></div>
-</div>
-
-</div>
-
-<script>
-const equipmentData = [
-    { id:1,name:"Projector 201",status:"available",location:"Room A-101"},
-    { id:2,name:"Projector 202",status:"booked",location:"Room B-205"},
-    { id:3,name:"Laptop Cart",status:"available",location:"IT Office"}
-];
-
-let currentBookings = [];
-let selectedEquipment = null;
-let selectedTimeSlot = null;
-
-// RANDOM SLOTS
-function generateTimeSlots(){
-    const slots=[];
-    for(let i=10;i<18;i++){
-        slots.push(`${i}:00-${i+1}:00`);
-    }
-    return slots.sort(()=>Math.random()-0.5);
-}
-
-// INIT
-document.addEventListener('DOMContentLoaded',()=>{
-    renderEquipment();
-    renderTimeSlots();
-    updateStats();
-});
-
-// EQUIPMENT
-function renderEquipment(){
-    const container=document.getElementById('equipmentList');
-    container.innerHTML="";
-
-    equipmentData.forEach(eq=>{
-        const div=document.createElement('div');
-        div.className = eq.status==="available" ? "bg-green-400 p-4" : "bg-red-400 p-4";
-        div.innerHTML = `<h4>${eq.name}</h4><p>${eq.location}</p>`;
-        div.onclick=()=>selectEquipment(eq);
-        container.appendChild(div);
-    });
-}
-
-// SELECT
-function selectEquipment(eq){
-    selectedEquipment=eq;
-
-    document.getElementById('selectedEquipment').classList.remove('hidden');
-    document.getElementById('selectedName').textContent=eq.name;
-    document.getElementById('selectedStatus').textContent=eq.status;
-
-    document.getElementById('bookBtn').disabled = eq.status!=="available";
-}
-
-// TIME SLOTS
-function renderTimeSlots(){
-    const container=document.getElementById('timeSlots');
-    container.innerHTML="";
-    const slots=generateTimeSlots();
-
-    slots.forEach(slot=>{
-        const btn=document.createElement('button');
-        btn.textContent=slot;
-        btn.onclick=()=>{
-            selectedTimeSlot=slot;
+    <script>
+        // Data Structure
+        const icons = {
+            projector: 'fa-projector',
+            laptop: 'fa-laptop',
+            audio: 'fa-microphone',
+            camera: 'fa-camera',
+            clicker: 'fa-hand-pointer',
+            switch: 'fa-network-wired',
+            presenter: 'fa-mouse-pointer',
+            power: 'fa-plug',
+            markers: 'fa-marker',
+            pointer: 'fa-magic',
+            screen: 'fa-tv'
         };
-        container.appendChild(btn);
-    });
-}
 
-// BOOK
-function bookEquipment(){
-    if(!selectedEquipment||!selectedTimeSlot) return;
+        const equipmentNames = [
+            { name: "Projector 201", type: "projector", location: "Room A-101" },
+            { name: "Projector 202", type: "projector", location: "Room B-205" },
+            { name: "Laptop Cart (10)", type: "laptop", location: "IT Office" },
+            { name: "Microphone Set", type: "audio", location: "AV Room" },
+            { name: "Document Camera", type: "camera", location: "Room C-301" },
+            { name: "Clickers (32)", type: "clicker", location: "Library" },
+            { name: "HDMI Switch", type: "switch", location: "IT Office" },
+            { name: "Wireless Presenter", type: "presenter", location: "Room D-102" },
+            { name: "Extension Cords", type: "power", location: "Storage" },
+            { name: "Whiteboard Markers", type: "markers", location: "Supply Room" },
+            { name: "Laser Pointer", type: "pointer", location: "AV Room" },
+            { name: "Screen (Portable)", type: "screen", location: "Room E-150" }
+        ];
 
-    const booking={
-        id:"BK"+Math.floor(Math.random()*10000),
-        name:selectedEquipment.name,
-        time:selectedTimeSlot
-    };
+        let state = {
+            user: "Student #4021",
+            equipment: [],
+            selectedId: null,
+            selectedSlot: null
+        };
 
-    currentBookings.push(booking);
+        const timeSlots = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00"];
 
-    selectedEquipment.status="booked";
+        // Initialization
+        function init() {
+            // Generate initial random state
+            state.equipment = equipmentNames.map((item, idx) => {
+                const isBooked = Math.random() > 0.7;
+                // Generate random available slots for today
+                const bookedSlots = timeSlots.filter(() => Math.random() > 0.6);
+                
+                return {
+                    ...item,
+                    id: idx + 1,
+                    status: isBooked ? 'booked' : 'available',
+                    currentUser: isBooked ? `User #${Math.floor(Math.random() * 9000 + 1000)}` : null,
+                    since: isBooked ? `${Math.floor(Math.random() * 5 + 1)} hours ago` : null,
+                    bookedSlots: bookedSlots
+                };
+            });
 
-    QRCode.toCanvas(document.getElementById('qrcode'), booking.id);
+            renderEquipment();
+            updateStats();
+        }
 
-    document.getElementById('bookingId').textContent=booking.id;
-    document.getElementById('qrSection').classList.remove('hidden');
+        function updateStats() {
+            const avail = state.equipment.filter(e => e.status === 'available').length;
+            const booked = state.equipment.length - avail;
+            document.getElementById('availableCount').textContent = avail;
+            document.getElementById('bookedCount').textContent = booked;
+            document.getElementById('totalBookings').textContent = state.equipment.length;
+        }
 
-    updateStats();
-    updateAdmin();
-    renderEquipment();
-}
+        function renderEquipment(filter = 'all') {
+            const list = document.getElementById('equipmentList');
+            list.innerHTML = '';
 
-document.getElementById('bookBtn').onclick=bookEquipment;
+            state.equipment.forEach(item => {
+                if (filter === 'available' && item.status !== 'available') return;
 
-// ADMIN
-function updateAdmin(){
-    const div=document.getElementById('adminBookings');
-    div.innerHTML="";
-    currentBookings.forEach(b=>{
-        div.innerHTML+=`<p>${b.name} - ${b.time}</p>`;
-    });
-}
+                const card = document.createElement('div');
+                card.onclick = () => selectItem(item.id);
+                card.className = `group cursor-pointer p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 fade-in ${
+                    state.selectedId === item.id ? 'ring-4 ring-indigo-200 border-indigo-400' : 'border-transparent'
+                } ${item.status === 'available' ? 'status-available' : 'status-booked'}`;
 
-// STATS
-function updateStats(){
-    document.getElementById('availableCount').textContent =
-        equipmentData.filter(e=>e.status==="available").length;
+                card.innerHTML = `
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-xl bg-white/30 flex items-center justify-center text-white text-2xl">
+                                <i class="fas ${icons[item.type]}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg text-white leading-tight">${item.name}</h4>
+                                <p class="text-white/80 text-xs">${item.location}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-1 bg-white/20 rounded-lg text-[10px] font-bold uppercase text-white">
+                                ${item.status}
+                            </span>
+                            <span class="text-white/90 text-xs font-medium">
+                                ${item.status === 'booked' ? `Since ${item.since}` : 'Ready for use'}
+                            </span>
+                        </div>
+                        ${item.status === 'booked' ? `
+                            <div class="pt-2 border-t border-white/20">
+                                <p class="text-white/90 text-[10px]">Held by: <span class="font-bold">${item.currentUser}</span></p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
 
-    document.getElementById('bookedCount').textContent =
-        equipmentData.filter(e=>e.status==="booked").length;
+        function selectItem(id) {
+            state.selectedId = id;
+            state.selectedSlot = null;
+            const item = state.equipment.find(e => e.id === id);
+            
+            const panel = document.getElementById('selectedEquipment');
+            const btn = document.getElementById('bookBtn');
+            const iconDiv = document.getElementById('selectedIcon');
+            
+            panel.classList.remove('hidden');
+            document.getElementById('selectedName').textContent = item.name;
+            document.getElementById('selectedUser').textContent = item.status === 'booked' ? `In use by ${item.currentUser}` : 'Ready to be booked';
+            
+            // UI Styling for panel icon
+            iconDiv.className = `w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg text-white ${item.status === 'available' ? 'status-available' : 'status-booked'}`;
+            iconDiv.innerHTML = `<i class="fas ${icons[item.type]} text-2xl"></i>`;
 
-    document.getElementById('totalBookings').textContent =
-        currentBookings.length;
-}
-</script>
+            renderSlots(item);
+            btn.disabled = true; // Wait for slot selection
+            renderEquipment(); // Refresh borders
+        }
 
+        function renderSlots(item) {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+
+            timeSlots.forEach(slot => {
+                const isTaken = item.bookedSlots.includes(slot);
+                const isSelected = state.selectedSlot === slot;
+                
+                const div = document.createElement('div');
+                div.className = `p-3 text-center rounded-xl font-bold text-sm cursor-pointer transition-all ${
+                    isTaken ? 'slot-booked' : 
+                    isSelected ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border-2 border-gray-100 text-gray-600 hover:border-indigo-200'
+                }`;
+                div.textContent = slot;
+                
+                if (!isTaken) {
+                    div.onclick = () => {
+                        state.selectedSlot = slot;
+                        document.getElementById('bookBtn').disabled = false;
+                        renderSlots(item);
+                    };
+                }
+                
+                container.appendChild(div);
+            });
+        }
+
+        document.getElementById('bookBtn').onclick = function() {
+            const item = state.equipment.find(e => e.id === state.selectedId);
+            const bookingId = `BK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            
+            // Show QR Code UI
+            document.getElementById('bookingDefaultState').classList.add('hidden');
+            document.getElementById('qrSection').classList.remove('hidden');
+            document.getElementById('bookingIdText').textContent = bookingId;
+
+            // Generate QR
+            QRCode.toCanvas(document.getElementById('qrcode'), 
+                JSON.stringify({
+                    id: bookingId,
+                    equipment: item.name,
+                    user: state.user,
+                    slot: state.selectedSlot,
+                    timestamp: new Date().toISOString()
+                }), 
+                { width: 200, margin: 1 }, 
+                function (error) { if (error) console.error(error); }
+            );
+
+            // Update local state (simulate backend)
+            item.status = 'booked';
+            item.currentUser = state.user;
+            item.since = "just now";
+            item.bookedSlots.push(state.selectedSlot);
+            
+            updateStats();
+        };
+
+        function resetUI() {
+            state.selectedId = null;
+            state.selectedSlot = null;
+            document.getElementById('bookingDefaultState').classList.remove('hidden');
+            document.getElementById('qrSection').classList.add('hidden');
+            document.getElementById('selectedEquipment').classList.add('hidden');
+            document.getElementById('bookBtn').disabled = true;
+            renderEquipment();
+        }
+
+        // Admin functionality
+        function openAdmin() {
+            const modal = document.getElementById('adminModal');
+            const logContainer = document.getElementById('adminLogs');
+            modal.classList.remove('hidden');
+            logContainer.innerHTML = '';
+
+            state.equipment.forEach(item => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100";
+                row.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-lg ${item.status === 'available' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} flex items-center justify-center">
+                            <i class="fas ${icons[item.type]}"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-900">${item.name}</p>
+                            <p class="text-xs text-gray-500">UID: 00${item.id}X</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-bold uppercase ${item.status === 'available' ? 'text-green-500' : 'text-red-500'}">
+                            ${item.status}
+                        </p>
+                        <p class="text-[10px] text-gray-400">
+                            ${item.currentUser ? `Held by: ${item.currentUser}` : 'No active rental'}
+                        </p>
+                    </div>
+                `;
+                logContainer.appendChild(row);
+            });
+        }
+
+        function closeAdmin() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        init();
+    </script>
 </body>
 </html>
